@@ -18,3 +18,8 @@ from django import forms
 class AddserviceForm(forms.Form):
     name = forms.CharField()
     price = forms.FloatField()
+
+
+class LoginForm(forms.Form):
+    username = forms.CharField()
+    password = forms.CharField(widget=forms.PasswordInput())

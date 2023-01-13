@@ -593,7 +593,7 @@
             <div class="container">
                 <div class="row">
                     <div class="col-12 d-flex justify-content-between justify-content-md-between  align-items-center flex-md-row flex-column">
-                        <h3 class="breadcrumb-title">Appointment</h3>
+                        <h3 class="breadcrumb-title">Appointments</h3>
                         <div class="breadcrumb-nav">
                             <nav aria-label="breadcrumb">
                             </nav>
@@ -618,7 +618,7 @@
                                     <thead>
                                         
                                         <tr>
-                                            <th class="product_remove">Services Type</th>
+                                            <th class="product_remove">Services Name</th>
                                             <th class="product_thumb">Customer Username</th>
                                             <th class="product_name">Date</th>
                                             <th class="product-price">Time</th>
@@ -638,8 +638,8 @@
                                             <td class="product_thumb">{{type.0.username}}</td>
                                             
                                             <td class="product_name">{{ type.1.Date }}</td>
-                                            <td class="product-price">{{ type.1.Time }}</td>
-                                            <td class="product_addcart">${{type.2.price}}</td>
+                                            <td class="product_name">{{ type.1.Time }}</td>
+                                            <td class="product-price">${{type.2.price}}</td>
                                         </tr> <!-- End Wishlist Single Item-->
                                         
                                         {% endfor %}

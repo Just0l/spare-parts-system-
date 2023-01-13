@@ -1,9 +1,11 @@
-from django.shortcuts import render, redirect, get_object_or_404
-from django.http import HttpResponse
+from django.shortcuts import render, redirect
 from SCP.models import Services, Workshop_Image, Appointment
 from User.models import User
-from itertools import chain
+import datetime
+from django.contrib.auth.forms import AuthenticationForm
 
+
+from django.contrib.auth import authenticate, login, logout
 
 from django.views.generic import TemplateView
 from .forms import AddserviceForm
@@ -13,9 +15,28 @@ from .forms import AddserviceForm
 # def index(request):
 #     return render(request, 'SCP/index.html')
 
-class LogIn(TemplateView):
-    template_name = 'SCP/login.html'
 
+
+def LoginPage(request):
+  user=User.objects.get(id=3)
+  login(request, user)
+
+  response = redirect('/Workshop/')
+  return response
+   
+
+
+
+def LogoutPage(request):
+  logout(request)
+  response = redirect('/Workshop/')
+  return response
+
+
+
+    
+      
+    
 
 
 class HomePageView(TemplateView):
@@ -29,44 +50,39 @@ class HomePageView(TemplateView):
 #    template_name = 'SCP/Workshop.html'
 
 def Workshop(request):
-     obj = Services.objects.all().filter(W_id=3)
-     
-     obj1 = Workshop_Image.objects.get(W_id=User.objects.get(id=3))
-     #print(obj1.image_field.url)
-     
-     context = {
-        'obj': obj,
-        'obj1': obj1,
+   if request.user.is_authenticated:
+      if request.user.role == 'WORKSHOP':
+         obj = Services.objects.all().filter(W_id=request.user.id)
+         
+         obj1 = Workshop_Image.objects.get(W_id=User.objects.get(id=request.user.id))
+         
+         context = {
+            'obj': obj,
+            'obj1': obj1,
 
-     }
+         }
 
-     return render(request, 'SCP/Workshop.html', context)
+         return render(request, 'SCP/Workshop.html', context)
+      else:
+         response = redirect('/home/')
+         return response
+   else:
+         response = redirect('/home/')
+         return response
 
 
 
 
 
 def ShowAppointment(request):
-     obj = Appointment.objects.all().filter(W_id=3)
-     obj1 = User.objects.all().filter(role='CUSTOMER')
-     obj2 = Services.objects.all().filter(W_id=3)
+   if request.user.is_authenticated:
+    if request.user.role == 'WORKSHOP':
+     datenow= datetime.datetime.now().date()+datetime.timedelta(days=3)
+     print (datenow)
+     obj = Appointment.objects.all().filter(W_id=request.user.id,Date__range=[datetime.datetime.now().date(), datenow])
      CID=[]
-     for n in obj1:
-        for i in obj2:
-            for j in obj:
-               if j.C_id == n:
-                if j.S_id == i:
-                  CID.append([n,j,i])
-                
-        
-    
-     
-     
-     
-        
-        
-    
-     
+     for n in obj:
+      CID.append([User.objects.get(id=n.C_id.id),n,Services.objects.get(id=n.S_id.id)])
      context = {
         'obj': obj,
         'obj1': CID
@@ -74,6 +90,13 @@ def ShowAppointment(request):
      }
 
      return render(request, 'SCP/Appointment.html', context)
+    else:
+      response = redirect('/home/')
+      return response
+
+   else:
+         response = redirect('/home/')
+         return response
 
 
 
@@ -84,24 +107,31 @@ def ShowAppointment(request):
 
 
 def Addservice(request):
-     Add_form = AddserviceForm()
-     
-     if request.method =="POST":
-        Add_form = AddserviceForm(request.POST)
-        if Add_form.is_valid():
-            #print(Add_form.cleaned_data['name'])
-            Services.objects.create(
-                W_id =User.objects.get(id=3,role='WORKSHOP'),
-                name = Add_form.cleaned_data['name'],
-                price = Add_form.cleaned_data['price']
-            )
-            response = redirect('/Workshop/')
-            return response
-     context = {
-        "form":Add_form
-     }
+   if request.user.is_authenticated:
+      if request.user.role == 'WORKSHOP':
+         Add_form = AddserviceForm()
+         
+         if request.method =="POST":
+            Add_form = AddserviceForm(request.POST)
+            if Add_form.is_valid():
+                  Services.objects.create(
+                     W_id =User.objects.get(id=request.user.id,role='WORKSHOP'),
+                     name = Add_form.cleaned_data['name'],
+                     price = Add_form.cleaned_data['price']
+                  )
+                  response = redirect('/Workshop/')
+                  return response
+         context = {
+            "form":Add_form
+         }
 
-     return render(request, 'SCP/Addservice.html', context)
+         return render(request, 'SCP/Addservice.html', context)
+      else:
+         response = redirect('/home/')
+         return response
+   else:
+         response = redirect('/home/')
+         return response
 
 
 
@@ -112,12 +142,22 @@ def Addservice(request):
 
 
 def Delete(request):
-    a = request.GET.get('DeleteID')
-    obj = Services.objects.get(id=a)
-    
-    obj.delete()
-    response = redirect('/Workshop/')
-    return response
+   if request.user.is_authenticated:
+      if request.user.role == 'WORKSHOP':
+         a = request.GET.get('DeleteID')
+         if Services.objects.all().filter(id=a,W_id=request.user.id).exists():
+            obj = Services.objects.get(id=a,W_id=request.user.id)
+            
+            obj.delete()
+         response = redirect('/Workshop/')
+         return response
+      else:
+         response = redirect('/home/')
+         return response
+   
+   else:
+         response = redirect('/home/')
+         return response
 
 
 
@@ -126,21 +166,31 @@ def Delete(request):
 
 
 def Update(request):
-     Add_form = AddserviceForm()
-     
-     if request.method =="POST":
-        Add_form = AddserviceForm(request.POST)
-        if Add_form.is_valid():
-            service = Services.objects.get(id=request.GET.get('UpdateID'))
-            service.name = Add_form.cleaned_data['name']
-            service.price = Add_form.cleaned_data['price']
-            service.save()
-            response = redirect('/Workshop/')
-            return response
-     context = {
-        "form":Add_form
-     }
-     return render(request, 'SCP/Updateservice.html', context)
+   if request.user.is_authenticated:
+      if request.user.role == 'WORKSHOP':
+         Add_form = AddserviceForm()
+         
+         if request.method =="POST":
+            Add_form = AddserviceForm(request.POST)
+            if Add_form.is_valid():
+                  service = Services.objects.get(id=request.GET.get('UpdateID'),W_id=request.user.id)
+                  service.name = Add_form.cleaned_data['name']
+                  service.price = Add_form.cleaned_data['price']
+                  service.save()
+                  response = redirect('/Workshop/')
+                  return response
+         context = {
+            "form":Add_form
+         }
+         return render(request, 'SCP/Updateservice.html', context)
+      else:
+         response = redirect('/home/')
+         return response
+   
+   else:
+         response = redirect('/home/')
+         return response
+
 
 
 
